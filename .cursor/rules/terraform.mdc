@@ -1,0 +1,172 @@
+---
+description: Terraform Best Practices and Workflow Guidelines
+globs: ["terraform/**/*.tf", "terraform/**/*.tfvars"]
+alwaysApply: false
+---
+
+# Terraform Best Practices
+
+## Core Principles
+
+1. **Targeted Operations First** - Always use `-target` flag when making changes to specific resources
+   - Example: `terraform apply -target=module.app_service`
+   - Prevents unintended changes and infinite loops
+   - Run `terraform plan -target=<resource>` before `terraform apply`
+
+2. **Incremental Changes** - Break large changes into smaller, targeted updates
+   - Apply changes module by module
+   - Test each module independently
+   - Never apply entire infrastructure at once during development
+
+3. **State Management**
+   - Always use remote backends (S3, GCS, Azure Blob Storage)
+   - Enable state locking
+   - Never run `terraform apply` simultaneously
+   - Use `terraform refresh` sparingly (causes full state refresh)
+
+## Workflow Rules
+
+1. **Before Any Terraform Operation:**
+   - Run `terraform fmt` to format code
+   - Run `terraform validate` to check syntax
+   - Run `terraform plan` with `-target` flag for specific resources
+   - Review plan output carefully before applying
+
+2. **Avoiding Infinite Loops:**
+   - Never create circular dependencies in `depends_on`
+   - Avoid resource changes that trigger provider refresh loops
+   - Use `ignore_changes` for attributes that change outside Terraform
+   - Use `lifecycle { create_before_destroy = true }` when appropriate
+
+3. **Module Design:**
+   - Each module should have single responsibility
+   - Modules should be independently deployable
+   - Use outputs to pass data between modules (not direct resource references when possible)
+   - Avoid cross-module dependencies when possible
+
+## Resource Management
+
+1. **Targeted Apply Strategy:**
+   ```bash
+   # Step 1: Plan specific module
+   terraform plan -target=module.app_service
+   
+   # Step 2: Apply if plan looks good
+   terraform apply -target=module.app_service
+   
+   # Step 3: Only apply full plan after all targeted changes are done
+   terraform plan  # Full plan to verify no drift
+   ```
+
+2. **Preventing Loops:**
+   - Check `depends_on` relationships for cycles
+   - Use `terraform graph | dot -Tsvg > graph.svg` to visualize dependencies
+   - Avoid resources that modify themselves or create dependency cycles
+
+3. **State Operations:**
+   - Use `terraform state list` to see current state
+   - Use `terraform state show <resource>` to inspect specific resources
+   - Never manually edit state files
+   - Use `terraform import` when adding existing resources
+
+## Error Prevention
+
+1. **Before Applying:**
+   - Always run `terraform plan` first
+   - Review all resources marked for creation/modification/destruction
+   - Use `-detailed-exitcode` flag: `terraform plan -detailed-exitcode`
+   - Never skip plan review
+
+2. **Variable Validation:**
+   - Always provide type constraints on variables
+   - Use validation blocks for variables
+   - Provide default values where appropriate
+   - Document all variables
+
+3. **Resource Lifecycle:**
+   - Use `prevent_destroy` for critical resources
+   - Use `ignore_changes` for attributes managed outside Terraform
+   - Use `create_before_destroy` when order matters
+
+## Code Organization
+
+1. **File Structure:**
+   - `main.tf` - Primary resource definitions
+   - `variables.tf` - All variable declarations
+   - `outputs.tf` - All output definitions
+   - `versions.tf` - Provider version constraints
+   - Keep related resources together
+
+2. **Module Usage:**
+   - One module per service/resource type
+   - Modules should accept all config via variables
+   - Modules should expose outputs for integration
+   - Keep module dependencies minimal
+
+3. **Naming Conventions:**
+   - Use descriptive resource names
+   - Follow cloud provider naming conventions
+   - Use variables for resource names (don't hardcode)
+
+## Project Structure
+
+1. **Modules Directory:**
+   - Use `modules/` for reusable components
+   - Each module should be self-contained
+   - Modules should not depend on each other (use outputs/inputs)
+
+2. **Stacks Directory:**
+   - Use `stacks/` for logical groupings of resources
+   - Stacks can use multiple modules
+   - Keep stacks focused on a single purpose (e.g., networking, storage, app-runtime)
+
+3. **Environments Directory:**
+   - Use `environments/<env>/` for environment-specific configs
+   - Separate state per environment
+   - Use `terraform.tfvars` for environment-specific values
+
+## Troubleshooting
+
+1. **Infinite Loop Prevention:**
+   - Check for resources that modify their own attributes
+   - Look for circular `depends_on` chains
+   - Use `terraform plan -refresh=false` to skip refresh if needed
+   - Check for provider bugs that cause refresh loops
+
+2. **When Loops Occur:**
+   - Stop Terraform immediately (`Ctrl+C`)
+   - Review `depends_on` relationships
+   - Check resource attributes for self-modifying values
+   - Use `terraform state rm <resource>` only as last resort
+   - Consider using `ignore_changes` for problematic attributes
+
+3. **State Issues:**
+   - Never run concurrent Terraform operations
+   - Use `terraform force-unlock` only if lock is stale
+   - Backup state before major operations
+
+## AI Assistant Guidelines
+
+When working with Terraform:
+
+1. **Always suggest targeted operations first:**
+   - "Run `terraform plan -target=<resource>` first"
+   - "Apply this change with `-target` flag to isolate it"
+
+2. **Warn about potential loops:**
+   - Check for circular dependencies
+   - Identify resources that might trigger refresh loops
+   - Suggest `ignore_changes` when appropriate
+
+3. **Provide incremental change strategy:**
+   - Break large changes into steps
+   - Suggest module-by-module approach
+   - Never suggest applying entire infrastructure without plan review
+
+4. **Minimize scope of changes:**
+   - Only modify what's necessary
+   - Use `count` or `for_each` instead of duplicating resources
+   - Suggest alternatives before creating new resources
+
+5. **Don't tail/head when running terraform apply**
+   - User wants to see the full output of Terraform apply in order to troubleshoot if needed

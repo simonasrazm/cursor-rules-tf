@@ -1,0 +1,43 @@
+---
+description: API Gateway Best Practices for Terraform
+globs: ["terraform/**/*.tf", "terraform/**/*.tfvars"]
+alwaysApply: false
+---
+
+# API Gateway Configuration
+
+Use API gateway when exposing public APIs or services that require authentication, routing, and load balancing.
+
+## Gateway Setup
+
+1. **Architecture Pattern:**
+   - Use API gateway in front of container service for public access
+   - Keep container service private (no unauthenticated access)
+   - Exclude `/health` endpoint from authentication
+
+2. **Authentication:**
+   - Configure authentication with your identity provider (Entra ID, Auth0, Firebase Auth, JWT, OAuth, SAML, etc.)
+   - Keep authentication configuration in version control
+
+## OpenAPI Spec Management
+
+If using OpenAPI specifications:
+
+1. **Spec Configuration:**
+   - Use template files (`.tmpl`) for OpenAPI spec with variables
+   - Configure host rewrite in URL map
+   - Use path translation for API gateway routing
+   - Keep spec version controlled
+
+2. **Route Synchronization:**
+   - **IMPORTANT**: When adding new backend routes, always update the OpenAPI spec file (e.g., `openapi-spec.yaml`) to include the new route
+   - Terraform replaces the entire API gateway config - manually added routes (via CLI/console) will be lost on next `terraform apply`
+   - The spec file must be kept in sync with all backend routes to prevent 404 errors
+
+## AI Assistant Guidelines
+
+When working with API gateway:
+
+- "Keep container service private, use API gateway for public access"
+- "Ensure OpenAPI spec is updated when adding new backend routes"
+- "Terraform replaces entire API gateway config - manual changes will be lost"

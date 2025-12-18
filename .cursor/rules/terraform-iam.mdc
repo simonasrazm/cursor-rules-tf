@@ -1,0 +1,49 @@
+---
+description: Identity and Access Management Best Practices for Terraform
+globs: ["terraform/**/*.tf", "terraform/**/*.tfvars"]
+alwaysApply: false
+---
+
+# Identity and Access Management
+
+## Service Identity Management
+
+1. **Identity Creation:**
+   - Create service identities in IAM module before using them
+   - Use descriptive names (e.g., `myapp-api`, `apigw-sa`)
+   - Grant permissions explicitly using IAM binding resources
+   - Follow principle of least privilege
+
+2. **Permissions:**
+   - Use predefined roles when possible
+   - Create custom roles only when necessary
+   - Grant permissions at appropriate scope (project/subscription/account level)
+
+3. **API Gateway Identity:**
+   - Create separate service identity for API gateway runtime
+   - Grant appropriate invoker/execution permissions on container service
+   - Don't grant excessive permissions
+
+## Common Issues
+
+### Identity Propagation Delays
+
+**Issue**: Identity and permission changes take time to propagate (can take minutes)
+
+**Solution**:
+- Use `depends_on` to enforce order between identity creation and usage
+- Plan for eventual consistency in deployment workflows
+
+**Symptoms**:
+- Permission denied errors immediately after creating identity
+- Intermittent 403 errors
+
+## AI Assistant Guidelines
+
+When working with IAM/identity:
+
+- "IAM module must be created before container service"
+- "Ensure service identities exist before referencing them"
+- "This belongs in the IAM module (service identity creation)"
+- "Follow principle of least privilege when granting permissions"
+- "Use `depends_on` to enforce order between identity creation and resource usage"

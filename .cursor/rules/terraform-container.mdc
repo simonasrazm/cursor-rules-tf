@@ -1,0 +1,76 @@
+---
+description: Container Service Best Practices for Terraform
+globs: ["terraform/**/*.tf", "terraform/**/*.tfvars"]
+alwaysApply: false
+---
+
+# Container Service Best Practices
+
+## Service Configuration
+
+1. **Service Identity:**
+   - Use dedicated service identities (don't use default compute identity)
+   - Follow principle of least privilege
+
+2. **Secrets Management:**
+   - Mount secrets as volume files, not environment variables for sensitive data
+   - Use environment variables for non-sensitive configuration
+
+3. **Resource Limits:**
+   - Set appropriate memory and CPU limits
+   - Configure timeouts appropriately
+
+4. **Lifecycle Management:**
+   - **Always use `lifecycle { ignore_changes }`** to ignore container image and revision attributes
+   - Revisions/versions are managed by code deployments, not infrastructure
+   - Prevents conflicts when deploying code via CI/CD pipelines
+
+## Deployment Strategy (Infrastructure vs Releases)
+
+**Key Principle**: Only code deployments trigger revisions. Infrastructure changes do not.
+
+1. **Infrastructure changes** (Terraform):
+   - Environment variables, secrets, memory/CPU, networking
+   - Should NOT create new revisions/versions
+   - Managed via Terraform lifecycle `ignore_changes` for revision attributes
+   - Update service configuration without triggering code deployment
+
+2. **Application releases** (CI/CD):
+   - Container images, code deployments
+   - SHOULD create new revisions/versions
+   - Managed via CI/CD pipelines
+   - Separate from infrastructure management
+
+Always use `lifecycle { ignore_changes }` to ignore revision attributes and container image to prevent revision conflicts when deploying code outside Terraform.
+
+## Security
+
+- Disable public unauthenticated access (use API gateway for public access)
+- Use service identities with least privilege
+- Mount secrets from secrets vault as files
+- Don't hardcode secrets in Terraform
+
+## Common Issues
+
+### Container Service Revision Conflicts
+
+**Error**: "Revision/version named 'xxx' with different configuration already exists"
+
+**Cause**: Terraform tracks revision names, but code deployments create revisions outside Terraform
+
+**Solution**: Always use `lifecycle { ignore_changes }` to ignore revision attributes and container image
+
+**Best Practice**: Only code deployments should create revisions. Infrastructure changes should NOT trigger revisions.
+
+**Prevention**: Ensure lifecycle block ignores revision attributes and container image
+
+## AI Assistant Guidelines
+
+When working with container services:
+
+- "Container service revisions are managed by code deployments, not Terraform"
+- "Infrastructure changes (env vars, secrets, resources) should NOT create revisions"
+- "Always add `lifecycle { ignore_changes }` to ignore revision attributes and container image"
+- "Only code deployments (CI/CD) should create new revisions"
+- "When updating container service config, ensure lifecycle block ignores revision attributes"
+- "Keep container service private, use API gateway for public access"

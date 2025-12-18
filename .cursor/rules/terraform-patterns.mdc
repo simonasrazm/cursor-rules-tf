@@ -1,0 +1,120 @@
+---
+description: Core Terraform Patterns and Best Practices
+globs: ["terraform/**/*.tf", "terraform/**/*.tfvars"]
+alwaysApply: false
+---
+
+# Terraform Core Patterns
+
+## Provider Configuration
+
+1. **Provider Setup:**
+   - Always specify project/subscription and region in provider configuration
+   - Store provider config in `versions.tf` with version constraints
+
+2. **API/Resource Provider Management:**
+   - Enable required APIs/resource providers before resources that need them
+   - Use provider-specific enablement resources with `for_each` for multiple APIs
+   - Set `disable_on_destroy = false` for required APIs
+   - Use `depends_on` for API enablement dependencies
+
+## State Management
+
+1. **Backend Configuration:**
+   - Store state in cloud storage bucket (e.g., `myproject-tf-state-prod`)
+   - Use prefix per environment (e.g., `terraform/environments/prod`)
+   - Enable versioning on state bucket
+   - Configure state locking
+
+2. **State Best Practices:**
+   - Never commit state files to version control
+   - Use separate state buckets per environment
+   - Backup state before major changes
+   - Use workspaces or separate directories for environment separation
+
+## Module Dependencies
+
+1. **Dependency Order:**
+   - IAM module should be created first (creates service identities)
+   - Storage module can be independent
+   - Secrets module can be independent
+   - Container service depends on IAM, Storage, Secrets
+   - API gateway depends on container service and IAM
+   - Load balancer depends on API gateway
+
+2. **Avoiding Circular Dependencies:**
+   - Don't have modules reference each other in circular fashion
+   - Use outputs to pass values between modules
+   - Use `depends_on` explicitly for resource creation order
+   - Review `terraform graph` output for dependency cycles
+
+## Targeted Operations
+
+Deploy modules incrementally using `-target` to isolate changes and avoid unintended modifications.
+
+**Examples:**
+```bash
+# Deploy dependencies first
+terraform apply -target=module.iam
+
+# Then dependent services
+terraform apply -target=module.app_service
+```
+
+Use `-target` for specific resources within modules when needed.
+
+## Common Cloud Issues
+
+1. **API/Resource Provider Enablement:**
+   - API/resource provider enablement can take time (can cause plan errors)
+   - Use `depends_on` for API enablement
+   - Consider enabling APIs manually before Terraform for faster iteration
+
+2. **Identity Propagation:**
+   - Identity and permission changes take time to propagate (can take minutes)
+   - Use `depends_on` to enforce order between identity creation and usage
+   - Plan for eventual consistency in deployment workflows
+
+3. **Resource Quotas:**
+   - Cloud providers have quotas on resources
+   - Check quotas before creating resources
+   - Request quota increases if needed
+
+4. **Region-Specific Resources:**
+   - Some resources are region-specific
+   - Ensure region consistency across related resources
+   - Use variables for region to avoid hardcoding
+
+## Environment-Specific Configuration
+
+1. **Environment Structure:**
+   - Use `environments/prod/` for production
+   - Separate `.tfvars` files per environment
+   - Use different state backends per environment
+   - Keep environment configs separate
+
+2. **Variable Management:**
+   - Store environment-specific values in `.tfvars` files
+   - Don't commit sensitive values
+   - Use secrets vault for sensitive values
+   - Document required variables
+
+## AI Assistant Guidelines
+
+When working with infrastructure Terraform:
+
+1. **Always check module dependencies:**
+   - "IAM module must be created before container service"
+   - "Ensure service identities exist before referencing them"
+
+2. **Warn about API enablement:**
+   - "This resource requires API/resource provider to be enabled first"
+   - "Add `depends_on` for API enablement"
+
+3. **Suggest targeted operations:**
+   - "Deploy IAM module first: `terraform apply -target=module.iam`"
+   - "Apply changes incrementally with `-target` flag"
+
+4. **Security reminders:**
+   - "Don't hardcode secrets in Terraform files"
+   - "Use secrets vault for sensitive values"

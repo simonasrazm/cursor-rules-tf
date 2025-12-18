@@ -1,0 +1,26 @@
+---
+description: Cloud Storage Best Practices for Terraform
+globs: ["terraform/**/*.tf", "terraform/**/*.tfvars"]
+alwaysApply: false
+---
+
+# Cloud Storage Best Practices
+
+## Bucket Configuration
+
+1. **Lifecycle and Versioning:**
+   - Set appropriate lifecycle policies
+   - Enable versioning if needed
+
+2. **Naming:**
+   - Use descriptive bucket names
+   - Follow cloud provider naming conventions
+   - Use variables for bucket names (don't hardcode)
+
+## AI Assistant Guidelines
+
+When working with cloud storage:
+
+- "Use descriptive bucket names that follow cloud provider conventions"
+- "Use variables for bucket names - don't hardcode values"
+- "Enable versioning for state buckets and critical data"

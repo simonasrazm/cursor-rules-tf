@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+
+# General rules
+
+when working with infrastructure (terraform, cloud CLI tools) please do sequential steps only. don't start agents in the background. working with infra is very sensitive and very sequential
